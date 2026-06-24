@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Katak Cerdas Ekosistem</title>
+    <!-- Menggunakan font Google Quicksand untuk tampilan ceria ramah anak -->
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ========================================================
+           VARIABEL CSS & RESET
+           ======================================================== */
+        :root {
+            --sky-color: #87CEEB;
+            --grass-color: #8BC34A;
+            --water-color: #4FC3F7;
+            --water-dark: #0288D1;
+            --rainy-sky: #607D8B;
+            --rainy-water: #455A64;
+            --text-dark: #333;
+            --white: #FFF;
+            --leaf: #4CAF50;
+            --leaf-hover: #388E3C;
+            --correct: #FFD700;
+            --wrong: #E53935;
+            --font-main: 'Quicksand', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-main);
+            overflow: hidden;
+            background-color: var(--sky-color);
+            color: var(--text-dark);
+        }
+
+        /* ========================================================
+           GLOBAL UI UTILITIES
+           ======================================================== */
+        .hidden { display: none !important; }
+        .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+            text-transform: uppercase;
+        }
+        .btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+
+        /* ========================================================
+           MAIN MENU
+           ======================================================== */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, var(--sky-color) 0%, var(--grass-color) 100%);
+            z-index: 100;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+        .logo-container h1 {
+            font-size: 3rem;
+            color: var(--white);
+            text-shadow: 3px 3px 0 #388E3C, -1px -1px 0 #388E3C, 1px -1px 0 #388E3C, -1px 1px 0 #388E3C, 1px 1px 0 #388E3C;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .logo-container p {
+            font-size: 1.2rem;
+            color: #FFF;
+            font-weight: 700;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .creator {
+            margin-top: 5px;
+            font-size: 1rem;
+            color: #FFEB3B;
+            font-weight: 700;
+        }
+
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 90%;
+            max-width: 350px;
+        }
+        .mode-btn {
+            background: var(--leaf);
+            color: var(--white);
+            padding: 20px;
+            font-size: 1.5rem;
+            border: 3px solid #FFF;
+        }
+        .mode-btn:hover { background: var(--leaf-hover); transform: scale(1.05); }
+
+        /* ========================================================
+           GAME SCREEN & LAYOUT
+           ======================================================== */
+        #game-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: row; /* Default Split Horizontal (Kolom Vertikal) */
+            background: var(--sky-color);
+        }
+
+        /* Top Controls Overlay */
+        .top-controls {
+            position: absolute;
+            top: 10px; right: 10px;
+            z-index: 50;
+            display: flex;
+            gap: 10px;
+        }
+        .ctrl-btn {
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid var(--text-dark);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Player Area Container */
+        .player-area {
+            flex: 1;
+            position: relative;
+            border-right: 3px solid rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background 1s ease;
+        }
+        .player-area:last-child { border-right: none; }
+        
+        .environment {
+            position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1;
+            display: flex; flex-direction: column;
+        }
+        .sky { flex: 1; position: relative; }
+        .water { 
+            height: 60%; 
+            background: linear-gradient(180deg, var(--water-color) 0%, var(--water-dark) 100%);
+            position: relative;
+        }
+
+        /* Weather Effects */
+        .rainy-sky { background-color: var(--rainy-sky) !important; }
+        .rainy-water { background: linear-gradient(180deg, var(--rainy-sky) 0%, var(--rainy-water) 100%) !important; }
+        
+        /* UI Game (Score, Q, dll) */
+        .game-ui { position: relative; z-index: 10; padding: 15px; height: 100%; display: flex; flex-direction: column; }
+        .stats-panel {
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 15px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .question-box {
+            background: var(--white);
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 3px solid var(--primary);
+            min-height: 80px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Gameplay Area (Frog & Lilypads) */
+        .play-zone {
+            flex: 1;
+            position: relative;
+            margin-top: 10px;
+        }
+        
+        .lilypad-container {
+            position: absolute;
+            bottom: 20%;
+            left: 0; width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 0 15px;
+        }
+        .lilypad {
+            background: var(--leaf);
+            border: 3px solid var(--leaf-hover);
+            border-radius: 50% 50% 50% 10px;
+            transform: rotate(45deg);
+            padding: 15px 5px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 80px;
+        }
+        .lilypad span {
+            transform: rotate(-45deg);
+            display: block;
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+        .lilypad:active { transform: rotate(45deg) scale(0.95); }
+        .lilypad.disabled { pointer-events: none; opacity: 0.8; }
+
+        .frog {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 4rem;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 20;
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.3));
+        }
+
+        /* Popups / Messages */
+        .msg-popup {
+            position: absolute;
+            top: 40%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 30;
+            font-size: 1.2rem;
+            border: 3px solid #CCC;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .msg-popup.show { opacity: 1; }
+        .msg-correct { border-color: var(--grass-color); color: var(--leaf-hover); }
+        .msg-wrong { border-color: var(--wrong); color: var(--wrong); }
+
+        /* ========================================================
+           END SCREEN
+           ======================================================== */
+        #end-screen {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .end-panel {
+            background: var(--white);
+            padding: 30px; border-radius: 20px;
+            text-align: center; width: 90%; max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .end-panel h2 { font-size: 2.5rem; color: var(--leaf-hover); margin-bottom: 10px; }
+        .player-result {
+            background: #F5F5F5;
+            padding: 15px; border-radius: 10px;
+            display: flex; justify-content: space-around;
+            align-items: center; font-size: 1.2rem; font-weight: bold;
+            border-left: 5px solid var(--leaf);
+        }
+
+        /* ========================================================
+           ANIMATIONS & RESPONSIVE CSS
+           ======================================================== */
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes rain-fall { 0% { top: -10%; } 100% { top: 100%; } }
+        @keyframes splash { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+        @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); } 100% { box-shadow: 0 0 0 50px rgba(255,255,255,0); } }
+        @keyframes particle { 0% { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0) rotate(180deg); opacity: 0; } }
+
+        .raindrop {
+            position: absolute; width: 2px; height: 15px; background: rgba(255,255,255,0.6);
+            animation: rain-fall linear infinite;
+        }
+        .water-splash {
+            position: absolute; border: 3px solid white; border-radius: 50%;
+            animation: splash 0.6s ease-out forwards; pointer-events: none; z-index: 15;
+        }
+        .particle {
+            position: absolute; font-size: 20px; pointer-events: none; z-index: 25;
+            animation: particle 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .anim-bounce { animation: float 0.5s ease infinite alternate; }
+
+        /* RESPONSIVE BREAKPOINTS */
+        /* Tablet & Desktop */
+        @media (min-width: 768px) {
+            .question-box { font-size: 1.5rem; padding: 25px; }
+            .lilypad { min-height: 100px; }
+            .lilypad span { font-size: 1.3rem; }
+        }
+
+        /* HP Portrait (Vertical Flow instead of horizontal split if > 1 player) */
+        @media (max-width: 767px) and (orientation: portrait) {
+            #game-screen { flex-direction: column; } /* Tumpuk atas bawah */
+            .player-area { border-right: none; border-bottom: 3px solid rgba(0,0,0,0.2); }
+            .player-area:last-child { border-bottom: none; }
+            .stats-panel { font-size: 0.8rem; padding: 5px; margin-bottom: 5px; }
+            .question-box { font-size: 0.9rem; padding: 10px; min-height: 60px; }
+            .lilypad { min-height: 60px; padding: 10px 5px; }
+            .lilypad span { font-size: 0.8rem; }
+            .frog { font-size: 2.5rem; bottom: 20px; }
+            .msg-popup { font-size: 0.9rem; padding: 10px; width: 80%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================== APP CONTAINER ================== -->
+    <div id="app">
+        
+        <!-- MAIN MENU -->
+        <div id="main-menu">
+            <div class="logo-container">
+                <div style="font-size: 5rem; margin-bottom:-20px;">🐸</div>
+                <h1>KATAK CERDAS<br>EKOSISTEM</h1>
+                <p>Belajar IPAS Sambil Bermain</p>
+                <div class="creator">Dibuat oleh: Atok Mustofa</div>
+            </div>
+            <div class="mode-buttons">
+                <button class="btn mode-btn" onclick="startGame(1)">[ SOLO MODE ]</button>
+                <button class="btn mode-btn" onclick="startGame(2)">[ DUEL MODE ]</button>
+                <button class="btn mode-btn" onclick="startGame(3)">[ TRIPLE MODE ]</button>
+            </div>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="hidden">
+            <div class="top-controls">
+                <button class="btn ctrl-btn" onclick="goHome()" title="Home">🏠</button>
+                <button class="btn ctrl-btn" onclick="restartGame()" title="Restart">↻</button>
+                <button class="btn ctrl-btn" id="btn-audio" onclick="toggleAudio()" title="Audio">🔊</button>
+                <button class="btn ctrl-btn" onclick="toggleFullScreen()" title="Fullscreen">⛶</button>
+            </div>
+            <!-- Player Areas akan digenerate via JS disini -->
+        </div>
+
+        <!-- END SCREEN -->
+        <div id="end-screen" class="hidden">
+            <div class="end-panel">
+                <h2>🏆 SELAMAT! 🏆</h2>
+                <p style="font-size:1.2rem; font-weight:bold; margin-bottom:10px;">Katak berhasil mencapai Kolam Kehidupan!</p>
+                <div id="results-container">
+                    <!-- Hasil per player digenerate via JS -->
+                </div>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                    <button class="btn" style="padding: 15px 30px; background:var(--leaf); color:white; font-size:1.2rem;" onclick="restartGame()">Main Lagi</button>
+                    <button class="btn" style="padding: 15px 30px; background:#FF9800; color:white; font-size:1.2rem;" onclick="goHome()">🏠 Home</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================== LOGIKA JAVASCRIPT ================== -->
+    <script>
+        /* --- STRUKTUR DATA SOAL (ARRAY) --- */
+        const questionsDB = [
+            {
+                q: "🌱 Semua makhluk hidup dan benda tak hidup yang saling berinteraksi disebut ....",
+                opts: { A: "Populasi", B: "Komunitas", C: "Ekosistem", D: "Habitat" },
+                ans: "C", msg: "Hebat! Katakmu menemukan ekosistem yang sehat."
+            },
+            {
+                q: "🐇 Dalam rantai makanan berikut: Rumput → Kelinci → Ular → Elang. Kelinci berperan sebagai ....",
+                opts: { A: "Produsen", B: "Konsumen I", C: "Konsumen II", D: "Pengurai" },
+                ans: "B", msg: "Lompatan super!"
+            },
+            {
+                q: "☀️ Sumber energi utama bagi kehidupan di bumi adalah ....",
+                opts: { A: "Air", B: "Angin", C: "Matahari", D: "Tanah" },
+                ans: "C", msg: "Katak memperoleh energi matahari!"
+            },
+            {
+                q: "🌳 Makhluk hidup yang dapat membuat makanan sendiri disebut ....",
+                opts: { A: "Konsumen", B: "Pengurai", C: "Produsen", D: "Predator" },
+                ans: "C", msg: "Katak mendapatkan daun energi."
+            },
+            {
+                q: "♻️ Berikut yang termasuk upaya menjaga lingkungan adalah ....",
+                opts: { A: "Membuang sampah ke sungai", B: "Menebang pohon sembarangan", C: "Membakar sampah plastik", D: "Menanam pohon" },
+                ans: "D", msg: "Katak menanam bibit pohon!"
+            },
+            {
+                q: "🐛 Hewan yang memakan tumbuhan disebut ....",
+                opts: { A: "Karnivora", B: "Herbivora", C: "Omnivora", D: "Predator" },
+                ans: "B", msg: "Katak bertemu ulat pemakan daun."
+            },
+            {
+                q: "🌧️ Air hujan yang turun ke bumi merupakan bagian dari ....",
+                opts: { A: "Daur hidup", B: "Daur air", C: "Daur makanan", D: "Daur energi" },
+                ans: "B", msg: "Katak mendapat percikan air segar."
+            },
+            {
+                q: "🦅 Jika jumlah ular berkurang dalam rantai makanan, kemungkinan yang terjadi adalah ....",
+                opts: { A: "Kelinci bertambah", B: "Kelinci berkurang", C: "Rumput habis", D: "Elang bertambah" },
+                ans: "A", msg: "Lompatan cerdas!"
+            },
+            {
+                q: "🌍 Salah satu penyebab pemanasan global adalah ....",
+                opts: { A: "Menanam pohon", B: "Menghemat listrik", C: "Emisi kendaraan bermotor", D: "Mendaur ulang sampah" },
+                ans: "C", msg: "Katak berhasil menghindari daerah panas."
+            },
+            {
+                q: "🌿 Organisme yang bertugas menguraikan sisa makhluk hidup adalah ....",
+                opts: { A: "Produsen", B: "Konsumen", C: "Predator", D: "Pengurai" },
+                ans: "D", msg: "SELAMAT! Katak berhasil mencapai kolam kehidupan!"
+            }
+        ];
+
+        /* --- STATE MANAGEMENT --- */
+        let numPlayers = 1;
+        let playersData = [];
+        let isAudioMuted = false;
+        
+        // Audio Context Setup (Procedural Audio untuk menghindari file eksternal)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playTone(freq, type, duration, vol=0.1) {
+            if (isAudioMuted || audioCtx.state === 'suspended') return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const SFX = {
+            jump: () => { playTone(400, 'sine', 0.1); setTimeout(()=>playTone(600, 'sine', 0.15), 100); },
+            correct: () => { playTone(600, 'triangle', 0.1); setTimeout(()=>playTone(800, 'triangle', 0.2), 100); setTimeout(()=>playTone(1000, 'triangle', 0.3), 200); },
+            wrong: () => { playTone(300, 'sawtooth', 0.2); setTimeout(()=>playTone(200, 'sawtooth', 0.4), 150); },
+            finish: () => { playTone(523.25, 'sine', 0.2); setTimeout(()=>playTone(659.25, 'sine', 0.2), 200); setTimeout(()=>playTone(783.99, 'sine', 0.4), 400); }
+        };
+
+        /* --- INISIALISASI GAME --- */
+        function startGame(mode) {
+            // Wake up audio context on user interaction
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            numPlayers = mode;
+            playersData = [];
+            
+            const gameScreen = document.getElementById('game-screen');
+            // Hapus area pemain lama (simpan kontrol atas)
+            const controls = gameScreen.querySelector('.top-controls');
+            gameScreen.innerHTML = '';
+            gameScreen.appendChild(controls);
+
+            // Buat state dan DOM untuk tiap pemain
+            for(let i=0; i<numPlayers; i++) {
+                playersData.push({
+                    id: i,
+                    score: 0,
+                    correct: 0,
+                    wrong: 0,
+                    qIndex: 0,
+                    isAnimating: false,
+                    finished: false
+                });
+                gameScreen.appendChild(createPlayerDOM(i));
+            }
+
+            document.getElementById('main-menu').classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+
+            // Load soal pertama untuk semua
+            for(let i=0; i<numPlayers; i++) {
+                loadQuestion(i);
+            }
+        }
+
+        /* --- GENERATE DOM PLAYER --- */
+        function createPlayerDOM(pIndex) {
+            const div = document.createElement('div');
+            div.className = 'player-area';
+            div.id = `player-area-${pIndex}`;
+            
+            let playerTitle = numPlayers > 1 ? `Player ${pIndex + 1}` : 'Solo Player';
+
+            div.innerHTML = `
+                <div class="environment">
+                    <div class="sky" id="sky-${pIndex}"></div>
+                    <div class="water" id="water-${pIndex}"></div>
+                </div>
+                <div class="game-ui">
+                    <div class="stats-panel">
+                        <span style="color:var(--text-dark)">👤 ${playerTitle}</span>
+                        <span style="color:var(--water-dark)">⭐ Score: <span id="score-${pIndex}">0</span></span>
+                        <span style="color:var(--leaf-hover)">📈 Level: <span id="level-${pIndex}">1/10</span></span>
+                    </div>
+                    <div class="question-box" id="qtext-${pIndex}">Pertanyaan memuat...</div>
+                    
+                    <div class="play-zone">
+                        <div class="msg-popup" id="msg-${pIndex}">Pesan</div>
+                        
+                        <div class="lilypad-container">
+                            <button class="lilypad" id="btn-${pIndex}-A" onclick="handleAnswer(${pIndex}, 'A')"><span id="opt-${pIndex}-A">A</span></button>
+                            <button class="lilypad" id="btn-${pIndex}-B" onclick="handleAnswer(${pIndex}, 'B')"><span id="opt-${pIndex}-B">B</span></button>
+                            <button class="lilypad" id="btn-${pIndex}-C" onclick="handleAnswer(${pIndex}, 'C')"><span id="opt-${pIndex}-C">C</span></button>
+                            <button class="lilypad" id="btn-${pIndex}-D" onclick="handleAnswer(${pIndex}, 'D')"><span id="opt-${pIndex}-D">D</span></button>
+                        </div>
+                        
+                        <div class="frog anim-bounce" id="frog-${pIndex}">🐸</div>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        /* --- LOAD SOAL --- */
+        function loadQuestion(pIndex) {
+            const player = playersData[pIndex];
+            if(player.qIndex >= questionsDB.length) {
+                player.finished = true;
+                checkAllFinished();
+                return;
+            }
+
+            const qData = questionsDB[player.qIndex];
+            document.getElementById(`level-${pIndex}`).innerText = `${player.qIndex + 1}/${questionsDB.length}`;
+            document.getElementById(`qtext-${pIndex}`).innerText = qData.q;
+            
+            ['A', 'B', 'C', 'D'].forEach(letter => {
+                const btn = document.getElementById(`btn-${pIndex}-${letter}`);
+                document.getElementById(`opt-${pIndex}-${letter}`).innerText = `${letter}. ${qData.opts[letter]}`;
+                btn.classList.remove('disabled');
+            });
+
+            // Reset Posisi Katak
+            const frog = document.getElementById(`frog-${pIndex}`);
+            frog.style.transform = 'translateX(-50%) translateY(0) scale(1)';
+            frog.style.opacity = '1';
+            frog.innerText = '🐸';
+            frog.classList.add('anim-bounce');
+
+            // Reset Cuaca
+            document.getElementById(`sky-${pIndex}`).innerHTML = '';
+            document.getElementById(`sky-${pIndex}`).classList.remove('rainy-sky');
+            document.getElementById(`water-${pIndex}`).classList.remove('rainy-water');
+            
+            player.isAnimating = false;
+        }
+
+        /* --- HANDLE JAWABAN --- */
+        function handleAnswer(pIndex, selectedLetter) {
+            const player = playersData[pIndex];
+            if(player.isAnimating || player.finished) return;
+            
+            player.isAnimating = true;
+            const qData = questionsDB[player.qIndex];
+            const isCorrect = selectedLetter === qData.ans;
+            
+            // Disable buttons
+            ['A', 'B', 'C', 'D'].forEach(l => document.getElementById(`btn-${pIndex}-${l}`).classList.add('disabled'));
+
+            // Animasi Lompat
+            SFX.jump();
+            const frog = document.getElementById(`frog-${pIndex}`);
+            const targetBtn = document.getElementById(`btn-${pIndex}-${selectedLetter}`);
+            
+            // Hitung jarak (sederhana)
+            const frogRect = frog.getBoundingClientRect();
+            const targetRect = targetBtn.getBoundingClientRect();
+            const parentRect = frog.parentElement.getBoundingClientRect();
+            
+            const destX = (targetRect.left - parentRect.left) + (targetRect.width/2) - (frogRect.width/2);
+            const destY = -((parentRect.bottom - frogRect.bottom) - (parentRect.bottom - targetRect.top)) - 20;
+
+            frog.classList.remove('anim-bounce');
+            // Parabola simulasi
+            frog.style.transform = `translate(${destX - (parentRect.width/2 - frogRect.width/2)}px, ${destY - 50}px) scale(1.5)`;
+            
+            setTimeout(() => {
+                frog.style.transform = `translate(${destX - (parentRect.width/2 - frogRect.width/2)}px, ${destY}px) scale(1)`;
+                
+                if(isCorrect) {
+                    handleCorrect(pIndex, qData.msg);
+                } else {
+                    handleWrong(pIndex);
+                }
+            }, 500); // Waktu lompat
+        }
+
+        function handleCorrect(pIndex, msgText) {
+            const player = playersData[pIndex];
+            player.score += 10;
+            player.correct += 1;
+            document.getElementById(`score-${pIndex}`).innerText = player.score;
+            
+            SFX.correct();
+            const frog = document.getElementById(`frog-${pIndex}`);
+            frog.innerText = '🐸'; // Katak Senang (Default)
+            
+            showMessage(pIndex, msgText, 'msg-correct');
+            spawnParticles(frog, ['❤️', '⭐', '🍃']);
+
+            setTimeout(() => {
+                player.qIndex++;
+                loadQuestion(pIndex);
+            }, 2500);
+        }
+
+        function handleWrong(pIndex) {
+            const player = playersData[pIndex];
+            player.wrong += 1;
+            
+            SFX.wrong();
+            const frog = document.getElementById(`frog-${pIndex}`);
+            frog.innerText = '😿'; // Katak Sedih
+            
+            showMessage(pIndex, "Yah, kurang tepat. Katak tergelincir!", 'msg-wrong');
+            
+            // Animasi Jatuh ke air
+            setTimeout(() => {
+                frog.style.transform += ` translateY(100px)`;
+                frog.style.opacity = '0';
+                
+                // Splash Effect
+                const splash = document.createElement('div');
+                splash.className = 'water-splash';
+                splash.style.left = '50%'; splash.style.bottom = '20%';
+                splash.style.width = '50px'; splash.style.height = '15px';
+                document.getElementById(`water-${pIndex}`).appendChild(splash);
+
+                // Ganti Cuaca (Hujan)
+                document.getElementById(`sky-${pIndex}`).classList.add('rainy-sky');
+                document.getElementById(`water-${pIndex}`).classList.add('rainy-water');
+                createRain(pIndex);
+
+                setTimeout(() => {
+                    player.qIndex++;
+                    loadQuestion(pIndex); // TETAP LANJUT SOAL BERIKUTNYA
+                }, 2500);
+
+            }, 500);
+        }
+
+        function showMessage(pIndex, text, typeClass) {
+            const msgBox = document.getElementById(`msg-${pIndex}`);
+            msgBox.innerText = text;
+            msgBox.className = `msg-popup show ${typeClass}`;
+            setTimeout(() => { msgBox.classList.remove('show'); }, 2000);
+        }
+
+        /* --- VISUAL EFFECTS --- */
+        function spawnParticles(element, emojis) {
+            const rect = element.getBoundingClientRect();
+            for(let i=0; i<15; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                p.style.left = `${rect.left + rect.width/2}px`;
+                p.style.top = `${rect.top}px`;
+                
+                // Random arah
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 50 + Math.random() * 100;
+                p.style.setProperty('--dx', `${Math.cos(angle)*dist}px`);
+                p.style.setProperty('--dy', `${Math.sin(angle)*dist}px`);
+                
+                document.body.appendChild(p);
+                setTimeout(()=> p.remove(), 1000);
+            }
+        }
+
+        function createRain(pIndex) {
+            const sky = document.getElementById(`sky-${pIndex}`);
+            for(let i=0; i<30; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'raindrop';
+                drop.style.left = `${Math.random() * 100}%`;
+                drop.style.animationDuration = `${0.5 + Math.random() * 0.5}s`;
+                drop.style.animationDelay = `${Math.random()}s`;
+                sky.appendChild(drop);
+            }
+        }
+
+        /* --- END GAME LOGIC --- */
+        function checkAllFinished() {
+            const allDone = playersData.every(p => p.finished);
+            if(allDone) {
+                setTimeout(showEndScreen, 1000);
+            }
+        }
+
+        function showEndScreen() {
+            SFX.finish();
+            const endScreen = document.getElementById('end-screen');
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+
+            // Sortir pemenang jika multiplayer
+            let sortedPlayers = [...playersData].sort((a,b) => b.score - a.score);
+
+            sortedPlayers.forEach((p, index) => {
+                let badge = numPlayers > 1 ? (index === 0 ? '👑 Pemenang' : `Peringkat ${index+1}`) : 'Hasil Akhir';
+                container.innerHTML += `
+                    <div class="player-result">
+                        <div>
+                            <div style="font-size:0.9rem; color:#666;">Player ${p.id + 1}</div>
+                            <div style="color:var(--primary);">${badge}</div>
+                        </div>
+                        <div>
+                            <div>⭐ Score: ${p.score}</div>
+                            <div style="font-size:0.9rem; color:#666;">✅ ${p.correct} Benar | ❌ ${p.wrong} Salah</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            endScreen.classList.remove('hidden');
+            
+            // Confetti di background end screen
+            spawnParticles(document.body, ['🎊', '🎉', '🐸', '⭐']);
+            setTimeout(()=>spawnParticles(document.body, ['🎊', '🎉', '🐸', '⭐']), 500);
+            setTimeout(()=>spawnParticles(document.body, ['🎊', '🎉', '🐸', '⭐']), 1000);
+        }
+
+        /* --- UI CONTROLS --- */
+        function goHome() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            startGame(numPlayers);
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('btn-audio');
+            btn.innerText = isAudioMuted ? '🔇' : '🔊';
+            btn.style.opacity = isAudioMuted ? '0.5' : '1';
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Fix for AudioContext on initial interaction
+        document.body.addEventListener('click', function() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+        }, { once: true });
+
+    </script>
+</body>
+</html>
